@@ -7,8 +7,9 @@ var async = require('async');
 var opt = {
   masterKey: '1mx7DaT6tvgFN42o5qbaZswVt662ar7v92PM0y8r_0pk',
   liveryKey: '1ESc0WXtqFcVcGiRA0bhlXxm1-mo0HICmn439r16GOvs',
-  carModel: 'ks_mazda_nd_cup',
-  region: 'EU',
+  carModel: 'ks_mazda_mx5_cup',
+  region: 'NA',
+  defaultSkin: '00_official',
 };
 
 async.waterfall([
@@ -46,7 +47,7 @@ async.waterfall([
       var driverSkin = _.find(liveries, { 'redditName': _.find(row, { 'col': '1' }).value });
       //set default skins
       if(driverSkin == undefined) {
-        driverSkin = 'someDefaultSkin';
+        driverSkin = opt.defaultSkin;
       } else {
         driverSkin = driverSkin.liveryDirectory;
       }
@@ -57,7 +58,7 @@ async.waterfall([
         guid: _.find(row, { 'col': '3' }).value,
         division: _.find(row, { 'col': '4' }).value,
         region: _.find(row, { 'col': '5' }).value,
-        team: (_.find(row, { 'col': '6' }) ? _.find(row, { 'col': '6' }).value : 'null') ,
+        team: (_.find(row, { 'col': '6' }) ? _.find(row, { 'col': '6' }).value : '') ,
         driverNumber: _.find(row, { 'col': '8' }).value,
         skin: driverSkin,
       };
@@ -86,6 +87,8 @@ async.waterfall([
         entrylist += string;
       }
     });
-    fs.writeFile('entry_list.ini', entrylist);
+    fs.writeFile('entry_list.ini', entrylist, function(err) {
+      console.log('Entry_list.ini has been generated successfully.');
+    });
   }
 );
