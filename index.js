@@ -8,6 +8,7 @@ var opt = {
   masterKey: '1mx7DaT6tvgFN42o5qbaZswVt662ar7v92PM0y8r_0pk',
   liveryKey: '1ESc0WXtqFcVcGiRA0bhlXxm1-mo0HICmn439r16GOvs',
   carModel: 'ks_mazda_nd_cup',
+  region: 'EU',
 };
 
 async.waterfall([
@@ -69,7 +70,7 @@ async.waterfall([
     var driverCount = 0;
 
     _.forEach(result, function(driver) {
-      if(driver.region == 'NA') {
+      if(driver.region == opt.region) {
         var string = '[CAR_'+ driverCount +']\n';
         string += 'DRIVERNAME=' + driver.acName + '\n';
         string += 'TEAM=\n';
