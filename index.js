@@ -7,6 +7,8 @@ var prompt = require('prompt');
 
 var opt = {
   masterKey: '1mx7DaT6tvgFN42o5qbaZswVt662ar7v92PM0y8r_0pk',
+  naKey: '1mog-A9imxVuiwtP70a9oktmW8soNEwlK4l5v626q5u4',
+  euKey: '1jqfYmXZmjP7qHEMhuU60DRVMXQ1FRij3x5LqR2zpqHo',
   liveryKey: '1ESc0WXtqFcVcGiRA0bhlXxm1-mo0HICmn439r16GOvs',
   carModel: 'ks_mazda_mx5_cup',
   region: 'NA',
@@ -58,11 +60,22 @@ function generateList() {
         spreadsheet.worksheets[0].cells({
           range: 'R3C1:R100C2'
         }, function(err, liveryCells) {
-          callback(null, driverCells, liveryCells)
+          callback(null, driverCells, liveryCells);
         });
       });
     },
     function(driverCells, liveryCells, callback) {
+      Spreadsheet({
+        key: (opt.region == 'NA') ? opt.naKey : opt.euKey,
+      }, function(err, spreadsheet) {
+        spreadsheet.worksheets[0].cells({
+          range: 'R3C1:R100C4'
+        }, function(err, checkInCells) {
+          callback(null, driverCells, liveryCells, checkInCells);
+        });
+      });
+    },
+    function(driverCells, liveryCells, checkInCells, callback) {
       var liveries = _.map(liveryCells.cells, function(row) {
         return {
           redditName: _.find(row, { 'col': '1' }).value,
@@ -70,8 +83,25 @@ function generateList() {
         };
       });
 
+      var driverCheckIn = _.map(checkInCells.cells, function(row) {
+        var isChecked = false;
+
+        if (_.find(row, {'col': '4'}) && 
+            _.find(row, {'col': '4'}).value != undefined) {
+          isChecked = true;
+        }
+
+        return {
+          redditName: _.find(row, { 'col': '1' }).value,
+          isCheckedIn: isChecked,
+        };
+      });
+
       var data = _.map(driverCells.cells, function(row) {
-        var driverSkin = _.find(liveries, { 'redditName': _.find(row, { 'col': '1' }).value });
+        var redditName = _.find(row, { 'col': '1' }).value;
+        var driverSkin = _.find(liveries, { 'redditName': redditName });
+        var checkedIn = _.find(driverCheckIn, { 'redditName': redditName });
+
         //set default skins
         if(driverSkin == undefined) {
           driverSkin = opt.defaultSkin;
@@ -79,16 +109,22 @@ function generateList() {
           driverSkin = driverSkin.liveryDirectory;
         }
 
-        return {
-          redditName: _.find(row, { 'col': '1' }).value,
-          acName: _.find(row, { 'col': '2' }).value,
-          guid: _.find(row, { 'col': '3' }).value,
-          division: _.find(row, { 'col': '4' }).value,
-          region: _.find(row, { 'col': '5' }).value,
-          team: (_.find(row, { 'col': '6' }) ? _.find(row, { 'col': '6' }).value : '') ,
-          driverNumber: _.find(row, { 'col': '8' }).value,
-          skin: driverSkin,
-        };
+        //check if driver is checked in
+        if (checkedIn != undefined && 
+            checkedIn.isCheckedIn != false) {
+          return {
+            redditName: _.find(row, { 'col': '1' }).value,
+            acName: _.find(row, { 'col': '2' }).value,
+            guid: _.find(row, { 'col': '3' }).value,
+            division: _.find(row, { 'col': '4' }).value,
+            region: _.find(row, { 'col': '5' }).value,
+            team: (_.find(row, { 'col': '6' }) ? _.find(row, { 'col': '6' }).value : '') ,
+            driverNumber: _.find(row, { 'col': '8' }).value,
+            skin: driverSkin,
+          };
+        } else {
+          return;
+        } 
       });
 
       callback(null, data);
@@ -98,7 +134,9 @@ function generateList() {
       var driverCount = 0;
 
       _.forEach(result, function(driver) {
-        if(driver.region == opt.region) {
+        if(driver != undefined && 
+          driver.region == opt.region) {
+
           var string = '[CAR_'+ driverCount +']\n';
           string += 'DRIVERNAME=' + driver.acName + '\n';
           string += 'TEAM=\n';
@@ -110,13 +148,17 @@ function generateList() {
           string += ' \n';
 
           driverCount++;
-
           entrylist += string;
         }
       });
-      fs.writeFile('entry_list.ini', entrylist, function(err) {
-        console.log('Entry_list.ini has been generated successfully.');
-      });
+
+      if(!entrylist) {
+        console.log('No one is checked in for this region!');
+      } else {
+        fs.writeFile('entry_list.ini', entrylist, function(err) {
+          console.log('Entry_list.ini has been generated successfully.');
+        });
+      }
     }
   );
 }
