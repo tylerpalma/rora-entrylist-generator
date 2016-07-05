@@ -121,15 +121,12 @@ function generateList() {
           //set default skins if custom is not supplied
           if(driverSkin == undefined && defaultSkinCount < (defaultSkins.length - 1)) {
             driverSkin = defaultSkins[defaultSkinCount].name;
-            console.log('first if: '+ defaultSkinCount);
             defaultSkinCount++;
           } else if(driverSkin == undefined && defaultSkinCount >= (defaultSkins.length - 1)) {
             defaultSkinCount = 0;
-            console.log('second if: '+ defaultSkinCount);
             driverSkin = defaultSkins[defaultSkinCount].name;
             defaultSkinCount++;
           } else {
-            console.log('third if: '+ defaultSkinCount);
             driverSkin = driverSkin.liveryDirectory;
           }
 
