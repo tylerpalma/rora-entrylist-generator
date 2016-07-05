@@ -4,6 +4,23 @@ var _ = require('lodash');
 var async = require('async');
 var prompt = require('prompt');
 
+var defaultSkins = [
+  { name: '00_official' },
+  { name: '01_cup_07' },
+  { name: '02_cup_23' },
+  { name: '03_cup_24' },
+  { name: '04_cup_29' },
+  { name: '05_cup_36' },
+  { name: '06_cup_55' },
+  { name: '07_cup_56' },
+  { name: '08_cup_57' },
+  { name: '09_cup_58' },
+  { name: '10_cup_60' },
+  { name: '11_cup_61' },
+  { name: '12_cup_62' },
+  { name: '13_cup_70' },
+  { name: '14_cup_87' }
+];
 
 var opt = {
   masterKey: '1mx7DaT6tvgFN42o5qbaZswVt662ar7v92PM0y8r_0pk',
@@ -12,7 +29,6 @@ var opt = {
   liveryKey: '1ESc0WXtqFcVcGiRA0bhlXxm1-mo0HICmn439r16GOvs',
   carModel: 'ks_mazda_mx5_cup',
   region: 'NA',
-  defaultSkin: '00_official',
 };
 
 prompt.start();
@@ -27,15 +43,9 @@ prompt.get([{
     name: 'defaultCar',
     description: 'What is the default car?',
     default: 'ks_mazda_mx5_cup',
-  },
-  {
-    name: 'defaultSkin',
-    description: 'What will be the default skin?',
-    default: '00_official',
   }], function (err, result) {
     opt.region = result.region;
     opt.carModel = result.defaultCar;
-    opt.defaultSkin = result.defaultSkin;
 
     generateList();
 });
@@ -86,7 +96,7 @@ function generateList() {
       var driverCheckIn = _.map(checkInCells.cells, function(row) {
         var isChecked = false;
 
-        if (_.find(row, {'col': '4'}) && 
+        if (_.find(row, {'col': '4'}) &&
             _.find(row, {'col': '4'}).value != undefined) {
           isChecked = true;
         }
@@ -97,21 +107,33 @@ function generateList() {
         };
       });
 
+      var defaultSkinCount = 0;
+
       var data = _.map(driverCells.cells, function(row) {
         var redditName = _.find(row, { 'col': '1' }).value;
         var driverSkin = _.find(liveries, { 'redditName': redditName });
         var checkedIn = _.find(driverCheckIn, { 'redditName': redditName });
 
-        //set default skins
-        if(driverSkin == undefined) {
-          driverSkin = opt.defaultSkin;
-        } else {
-          driverSkin = driverSkin.liveryDirectory;
-        }
-
         //check if driver is checked in
-        if (checkedIn != undefined && 
+        if (checkedIn != undefined &&
             checkedIn.isCheckedIn != false) {
+
+          //set default skins if custom is not supplied
+          if(driverSkin == undefined && defaultSkinCount < (defaultSkins.length - 1)) {
+            driverSkin = defaultSkins[defaultSkinCount].name;
+            console.log('first if: '+ defaultSkinCount);
+            defaultSkinCount++;
+          } else if(driverSkin == undefined && defaultSkinCount >= (defaultSkins.length - 1)) {
+            defaultSkinCount = 0;
+            console.log('second if: '+ defaultSkinCount);
+            driverSkin = defaultSkins[defaultSkinCount].name;
+            defaultSkinCount++;
+          } else {
+            console.log('third if: '+ defaultSkinCount);
+            driverSkin = driverSkin.liveryDirectory;
+          }
+
+          // assemble driver entry and map to var data
           return {
             redditName: _.find(row, { 'col': '1' }).value,
             acName: _.find(row, { 'col': '2' }).value,
@@ -124,7 +146,7 @@ function generateList() {
           };
         } else {
           return;
-        } 
+        }
       });
 
       callback(null, data);
@@ -134,7 +156,7 @@ function generateList() {
       var driverCount = 0;
 
       _.forEach(result, function(driver) {
-        if(driver != undefined && 
+        if(driver != undefined &&
           driver.region == opt.region) {
 
           var string = '[CAR_'+ driverCount +']\n';
